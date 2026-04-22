@@ -1,10 +1,32 @@
-const projectRows = [
-  { name: "Website Redesign", status: "In Progress", progress: "68%" },
-  { name: "Mobile App UI", status: "Planning", progress: "25%" },
-  { name: "Marketing Campaign", status: "Done", progress: "100%" },
-]
+import { useEffect, useState } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { getProjects } from "@/services/fakeApi"
 
 function ProjectsPage() {
+  const [projects, setProjects] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadProjects() {
+      try {
+        const data = await getProjects()
+        if (isMounted) setProjects(data)
+      } catch {
+        if (isMounted) setError("Failed to load projects.")
+      } finally {
+        if (isMounted) setIsLoading(false)
+      }
+    }
+
+    loadProjects()
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
   return (
     <section className="space-y-4 p-4">
       <div className="rounded-lg border border-border bg-card p-4">
@@ -20,16 +42,30 @@ function ProjectsPage() {
           <p>Status</p>
           <p>Progress</p>
         </div>
-        {projectRows.map((project) => (
-          <div
-            key={project.name}
-            className="grid grid-cols-3 border-b border-border px-4 py-3 text-sm last:border-b-0"
-          >
-            <p className="font-medium">{project.name}</p>
-            <p>{project.status}</p>
-            <p>{project.progress}</p>
-          </div>
-        ))}
+        {isLoading &&
+          Array.from({ length: 4 }).map((_, index) => (
+            <div
+              key={`skeleton-${index}`}
+              className="grid grid-cols-3 border-b border-border px-4 py-3 last:border-b-0"
+            >
+              <Skeleton className="h-5 w-32 bg-muted" />
+              <Skeleton className="h-5 w-24 bg-muted" />
+              <Skeleton className="h-5 w-16 bg-muted" />
+            </div>
+          ))}
+        {!isLoading && error && <p className="p-4 text-sm text-destructive">{error}</p>}
+        {!isLoading &&
+          !error &&
+          projects.map((project) => (
+            <div
+              key={project.id}
+              className="grid grid-cols-3 border-b border-border px-4 py-3 text-sm last:border-b-0"
+            >
+              <p className="font-medium">{project.name}</p>
+              <p>{project.status}</p>
+              <p>{project.progress}</p>
+            </div>
+          ))}
       </div>
     </section>
   )
